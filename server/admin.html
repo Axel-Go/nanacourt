@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nanacourt Admin</title>
+<style>
+  :root {
+    --bg: #0f1f18;
+    --card: #162b20;
+    --border: rgba(255,255,255,0.08);
+    --text: #e4efe8;
+    --dim: #7a9e8a;
+    --sprout: #d4f34a;
+    --green: #245c3f;
+    --sans: system-ui, -apple-system, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:15px; line-height:1.5; }
+  .wrap { max-width:960px; margin:0 auto; padding:24px 20px 80px; }
+
+  /* header */
+  .admin-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; flex-wrap:wrap; gap:12px; }
+  .admin-header h1 { margin:0; font-size:1.5rem; font-weight:600; }
+  .admin-header h1 span { color:var(--sprout); }
+  .logout-btn { background:none; border:1px solid var(--border); color:var(--dim); padding:6px 14px; border-radius:8px; cursor:pointer; font-size:13px; }
+  .logout-btn:hover { border-color:var(--dim); color:var(--text); }
+
+  /* stats */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:12px; margin-bottom:28px; }
+  .stat-card { padding:18px; border-radius:12px; background:var(--card); border:1px solid var(--border); }
+  .stat-card .num { font-size:1.6rem; font-weight:700; }
+  .stat-card .label { font-size:12px; color:var(--dim); text-transform:uppercase; letter-spacing:0.06em; margin-top:2px; }
+  .stat-card.pending .num { color:#fbbf24; }
+  .stat-card.confirmed .num { color:#4ade80; }
+  .stat-card.rejected .num { color:#f87171; }
+
+  /* filters */
+  .filters { display:flex; gap:6px; margin-bottom:20px; flex-wrap:wrap; }
+  .filter-btn { padding:7px 16px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--dim); font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; }
+  .filter-btn:hover { border-color:var(--sprout); color:var(--text); }
+  .filter-btn.active { background:var(--sprout); color:#1a2e22; border-color:var(--sprout); }
+
+  /* table */
+  .booking-list { display:flex; flex-direction:column; gap:10px; }
+  .booking-card { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; transition:border-color 0.15s; }
+  .booking-card:hover { border-color:rgba(255,255,255,0.15); }
+  .booking-row { display:grid; grid-template-columns:1fr 1fr 1fr auto; align-items:center; padding:16px 20px; cursor:pointer; gap:12px; }
+  .booking-row .name { font-weight:600; }
+  .booking-row .court { color:var(--dim); font-size:14px; }
+  .booking-row .date { font-size:14px; }
+  .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; }
+  .badge.pending { background:rgba(251,191,36,0.15); color:#fbbf24; }
+  .badge.confirmed { background:rgba(74,222,128,0.15); color:#4ade80; }
+  .badge.rejected { background:rgba(248,113,113,0.15); color:#f87171; }
+
+  /* expanded detail */
+  .booking-detail { display:none; padding:0 20px 20px; border-top:1px solid var(--border); }
+  .booking-card.open .booking-detail { display:block; }
+  .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
+  .detail-item label { display:block; font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px; }
+  .detail-item span { font-size:14px; }
+  .proof-img { max-width:280px; border-radius:10px; margin-top:10px; border:1px solid var(--border); cursor:pointer; }
+  .proof-img:hover { border-color:var(--sprout); }
+  .no-proof { font-size:13px; color:var(--dim); font-style:italic; }
+  .detail-actions { display:flex; gap:8px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border); }
+  .act-btn { padding:8px 18px; border-radius:10px; border:none; font-size:13px; font-weight:600; cursor:pointer; transition:opacity 0.15s; }
+  .act-btn:hover { opacity:0.85; }
+  .act-btn.confirm { background:#4ade80; color:#0f1f18; }
+  .act-btn.reject { background:#f87171; color:#fff; }
+  .act-btn.delete { background:transparent; border:1px solid var(--border); color:var(--dim); }
+  .act-btn.delete:hover { border-color:#f87171; color:#f87171; }
+
+  /* empty */
+  .empty { text-align:center; padding:60px 20px; color:var(--dim); }
+
+  /* login */
+  .login-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .login-box { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:36px 32px; width:100%; max-width:360px; text-align:center; }
+  .login-box h2 { margin:0 0 6px; font-size:1.3rem; }
+  .login-box p { margin:0 0 24px; color:var(--dim); font-size:14px; }
+  .login-box input { width:100%; padding:12px 14px; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text); font-size:15px; outline:none; margin-bottom:14px; }
+  .login-box input:focus { border-color:var(--sprout); }
+  .login-box button { width:100%; padding:12px; border:none; border-radius:10px; background:var(--sprout); color:#1a2e22; font-size:15px; font-weight:600; cursor:pointer; }
+  .login-box button:hover { background:#e2ff63; }
+  .login-error { color:#f87171; font-size:13px; margin-top:8px; }
+
+  /* lightbox */
+  .lightbox { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .lightbox img { max-width:90vw; max-height:90vh; border-radius:12px; }
+
+  /* tabs */
+  .admin-tabs { display:flex; gap:4px; margin-bottom:24px; padding:4px; border-radius:12px; background:rgba(255,255,255,0.04); }
+  .admin-tab { flex:1; padding:10px 16px; border:none; border-radius:10px; background:transparent; color:var(--dim); font-size:14px; font-weight:600; cursor:pointer; transition:all 0.15s; text-align:center; }
+  .admin-tab:hover { color:var(--text); }
+  .admin-tab.active { background:var(--sprout); color:#1a2e22; }
+
+  /* schedule */
+  .schedule-controls { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .schedule-date { padding:10px 14px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text); font-size:15px; font-family:var(--sans); outline:none; }
+  .schedule-date:focus { border-color:var(--sprout); }
+  .schedule-date::-webkit-calendar-picker-indicator { filter:invert(0.8); }
+  .schedule-today { padding:8px 16px; border:1px solid var(--border); border-radius:10px; background:transparent; color:var(--dim); font-size:13px; font-weight:600; cursor:pointer; }
+  .schedule-today:hover { border-color:var(--sprout); color:var(--text); }
+
+  .schedule-grid { display:grid; grid-template-columns:80px 1fr 1fr; gap:1px; background:var(--border); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .schedule-header { padding:14px 12px; background:var(--card); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--sprout); text-align:center; }
+  .schedule-time { padding:10px 8px; background:var(--card); font-size:12px; font-weight:600; color:var(--dim); text-align:center; display:flex; align-items:center; justify-content:center; }
+  .schedule-cell { padding:8px 10px; background:var(--bg); min-height:44px; display:flex; align-items:center; justify-content:center; }
+  .schedule-cell.has-booking { cursor:pointer; }
+  .schedule-booking { width:100%; padding:6px 10px; border-radius:8px; font-size:12px; font-weight:600; text-align:center; line-height:1.3; }
+  .schedule-booking.pending { background:rgba(251,191,36,0.12); color:#fbbf24; }
+  .schedule-booking.confirmed { background:rgba(74,222,128,0.12); color:#4ade80; }
+  .schedule-booking .sched-name { display:block; font-size:13px; }
+  .schedule-booking .sched-status { display:block; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; margin-top:2px; opacity:0.7; }
+  .schedule-empty { font-size:11px; color:rgba(255,255,255,0.15); }
+
+  /* responsive */
+  @media (max-width:640px) {
+    .booking-row { grid-template-columns:1fr 1fr; }
+    .detail-grid { grid-template-columns:1fr; }
+    .stats { grid-template-columns:repeat(2,1fr); }
+    .schedule-grid { grid-template-columns:60px 1fr 1fr; }
+    .schedule-booking .sched-name { font-size:11px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="login" class="login-wrap">
+  <div class="login-box">
+    <h2>Nanacourt Admin</h2>
+    <p>Enter password to continue</p>
+    <input type="password" id="pw" placeholder="Password" autofocus />
+    <button onclick="doLogin()">Sign in</button>
+    <div id="login-err" class="login-error" style="display:none"></div>
+  </div>
+</div>
+
+<div id="app" class="wrap" style="display:none">
+  <div class="admin-header">
+    <h1><span>Nanacourt</span> Admin</h1>
+    <button class="logout-btn" onclick="doLogout()">Log out</button>
+  </div>
+
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchTab('bookings')">Bookings</button>
+    <button class="admin-tab" onclick="switchTab('schedule')">Daily Schedule</button>
+  </div>
+
+  <div id="bookings-tab">
+    <div class="stats" id="stats"></div>
+    <div class="filters" id="filters"></div>
+    <div class="booking-list" id="list"></div>
+  </div>
+
+  <div id="schedule-tab" style="display:none">
+    <div class="schedule-controls">
+      <input type="date" class="schedule-date" id="schedule-date" />
+      <button class="schedule-today" onclick="setScheduleToday()">Today</button>
+    </div>
+    <div id="schedule-view"></div>
+  </div>
+</div>
+
+<script>
+const PASS = 'nanacourt2026'
+const API = window.location.origin
+
+let token = sessionStorage.getItem('nc_admin')
+let bookings = []
+let filter = 'all'
+
+if (token === PASS) showApp()
+
+function doLogin() {
+  const v = document.getElementById('pw').value
+  if (v === PASS) {
+    sessionStorage.setItem('nc_admin', v)
+    token = v
+    showApp()
+  } else {
+    const el = document.getElementById('login-err')
+    el.textContent = 'Wrong password'
+    el.style.display = 'block'
+  }
+}
+
+document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() })
+
+function doLogout() {
+  sessionStorage.removeItem('nc_admin')
+  location.reload()
+}
+
+function showApp() {
+  document.getElementById('login').style.display = 'none'
+  document.getElementById('app').style.display = 'block'
+  load()
+}
+
+async function load() {
+  const res = await fetch(API + '/api/bookings')
+  bookings = await res.json()
+  render()
+}
+
+function render() {
+  const counts = { all: bookings.length, pending: 0, confirmed: 0, rejected: 0 }
+  bookings.forEach(b => { if (counts[b.status] !== undefined) counts[b.status]++ })
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card"><div class="num">${counts.all}</div><div class="label">Total</div></div>
+    <div class="stat-card pending"><div class="num">${counts.pending}</div><div class="label">Pending</div></div>
+    <div class="stat-card confirmed"><div class="num">${counts.confirmed}</div><div class="label">Confirmed</div></div>
+    <div class="stat-card rejected"><div class="num">${counts.rejected}</div><div class="label">Rejected</div></div>
+  `
+
+  const filters = ['all','pending','confirmed','rejected']
+  document.getElementById('filters').innerHTML = filters.map(f =>
+    `<button class="filter-btn${filter===f?' active':''}" onclick="setFilter('${f}')">${f.charAt(0).toUpperCase()+f.slice(1)}</button>`
+  ).join('')
+
+  const filtered = filter === 'all' ? bookings : bookings.filter(b => b.status === filter)
+
+  if (filtered.length === 0) {
+    document.getElementById('list').innerHTML = '<div class="empty">No bookings found</div>'
+    return
+  }
+
+  document.getElementById('list').innerHTML = filtered.map(b => `
+    <div class="booking-card" id="card-${b.id}">
+      <div class="booking-row" onclick="toggle(${b.id})">
+        <div><div class="name">${esc(b.name)}</div><div class="court">${esc(b.court_name)}</div></div>
+        <div class="date">${esc(b.date)}<br><span style="color:var(--dim);font-size:13px">${esc(b.time_range)}</span></div>
+        <div style="text-align:right"><span class="badge ${b.status}">${b.status}</span></div>
+      </div>
+      <div class="booking-detail">
+        <div class="detail-grid">
+          <div class="detail-item"><label>Phone</label><span>${esc(b.phone)}</span></div>
+          <div class="detail-item"><label>Email</label><span>${b.email ? esc(b.email) : '—'}</span></div>
+          <div class="detail-item"><label>Hours</label><span>${b.hours}hr</span></div>
+          <div class="detail-item"><label>Total</label><span style="color:var(--sprout);font-weight:700">&#8369;${b.total_price}</span></div>
+          <div class="detail-item"><label>Payment</label><span>${esc(b.payment_method)}</span></div>
+          <div class="detail-item"><label>Submitted</label><span>${esc(b.created_at)}</span></div>
+        </div>
+        <div class="detail-item" style="margin-top:14px">
+          <label>Payment Proof</label>
+          ${b.proof_file
+            ? `<img class="proof-img" src="${API}/uploads/${b.proof_file}" onclick="openLightbox('${API}/uploads/${b.proof_file}')" />`
+            : '<div class="no-proof">No proof uploaded</div>'}
+        </div>
+        <div class="detail-actions">
+          ${b.status !== 'confirmed' ? `<button class="act-btn confirm" onclick="setStatus(${b.id},'confirmed')">Confirm</button>` : ''}
+          ${b.status !== 'rejected' ? `<button class="act-btn reject" onclick="setStatus(${b.id},'rejected')">Reject</button>` : ''}
+          ${b.status === 'confirmed' || b.status === 'rejected' ? `<button class="act-btn confirm" style="background:var(--dim)" onclick="setStatus(${b.id},'pending')">Back to Pending</button>` : ''}
+          <button class="act-btn delete" onclick="del(${b.id})">Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('')
+}
+
+function esc(s) {
+  if (!s) return ''
+  const d = document.createElement('div')
+  d.textContent = s
+  return d.innerHTML
+}
+
+function toggle(id) {
+  document.getElementById('card-' + id).classList.toggle('open')
+}
+
+function setFilter(f) {
+  filter = f
+  render()
+}
+
+async function setStatus(id, status) {
+  await fetch(API + '/api/bookings/' + id, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  })
+  await load()
+}
+
+async function del(id) {
+  if (!confirm('Delete this booking permanently?')) return
+  await fetch(API + '/api/bookings/' + id, { method: 'DELETE' })
+  await load()
+}
+
+function openLightbox(src) {
+  const lb = document.createElement('div')
+  lb.className = 'lightbox'
+  lb.innerHTML = `<img src="${src}" />`
+  lb.onclick = () => lb.remove()
+  document.body.appendChild(lb)
+}
+
+// --- Schedule tab ---
+
+let currentTab = 'bookings'
+
+function switchTab(tab) {
+  currentTab = tab
+  document.querySelectorAll('.admin-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', (i === 0 && tab === 'bookings') || (i === 1 && tab === 'schedule'))
+  })
+  document.getElementById('bookings-tab').style.display = tab === 'bookings' ? 'block' : 'none'
+  document.getElementById('schedule-tab').style.display = tab === 'schedule' ? 'block' : 'none'
+  if (tab === 'schedule') loadSchedule()
+}
+
+function setScheduleToday() {
+  const d = new Date()
+  document.getElementById('schedule-date').value = d.toISOString().split('T')[0]
+  loadSchedule()
+}
+
+document.getElementById('schedule-date').addEventListener('change', loadSchedule)
+
+function initScheduleDate() {
+  const d = new Date()
+  document.getElementById('schedule-date').value = d.toISOString().split('T')[0]
+}
+initScheduleDate()
+
+async function loadSchedule() {
+  const date = document.getElementById('schedule-date').value
+  if (!date) return
+
+  const res = await fetch(API + '/api/schedule?date=' + date)
+  const rows = await res.json()
+
+  const courts = [
+    { id: 'a', name: 'Ground Court' },
+    { id: 'b', name: 'Rooftop Court' }
+  ]
+
+  const slotMap = {}
+  courts.forEach(c => { slotMap[c.id] = {} })
+
+  rows.forEach(b => {
+    if (b.slots) {
+      b.slots.split(',').forEach(s => {
+        const h = Number(s)
+        if (slotMap[b.court_id]) {
+          slotMap[b.court_id][h] = b
+        }
+      })
+    }
+  })
+
+  const hours = []
+  for (let h = 6; h < 23; h++) hours.push(h)
+
+  function fmtHour(h) {
+    if (h === 0) return '12 AM'
+    if (h < 12) return h + ' AM'
+    if (h === 12) return '12 PM'
+    return (h - 12) + ' PM'
+  }
+
+  let html = '<div class="schedule-grid">'
+  html += '<div class="schedule-header">Time</div>'
+  courts.forEach(c => {
+    html += `<div class="schedule-header">${esc(c.name)}</div>`
+  })
+
+  hours.forEach(h => {
+    html += `<div class="schedule-time">${fmtHour(h)}</div>`
+    courts.forEach(c => {
+      const b = slotMap[c.id][h]
+      if (b) {
+        html += `<div class="schedule-cell has-booking">
+          <div class="schedule-booking ${b.status}">
+            <span class="sched-name">${esc(b.name)}</span>
+            <span class="sched-status">${b.status}</span>
+          </div>
+        </div>`
+      } else {
+        html += `<div class="schedule-cell"><span class="schedule-empty">—</span></div>`
+      }
+    })
+  })
+
+  html += '</div>'
+  document.getElementById('schedule-view').innerHTML = html
+}
+</script>
+</body>
+</html>

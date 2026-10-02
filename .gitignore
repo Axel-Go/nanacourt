@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+*.bak
+server/nanacourt.db
+server/nanacourt.db-wal
+server/nanacourt.db-shm
+server/uploads/
+practicebrowser/
